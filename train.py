@@ -12,7 +12,7 @@ import torch.distributed as dist
 from apex.parallel import DistributedDataParallel as DDP
 from apex import amp
 
-from data_utils import TextMelLoader, TextMelCollate
+from data_utils import TextMelSpeakerLoader, TextMelSpeakerCollate
 import models
 import commons
 import utils
@@ -47,18 +47,18 @@ def train_and_eval(rank, n_gpus, hps):
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
 
-  train_dataset = TextMelLoader(hps.data.training_files, hps.data)
+  train_dataset = TextMelSpeakerLoader(hps.data.training_files, hps.data)
   train_sampler = torch.utils.data.distributed.DistributedSampler(
       train_dataset,
       num_replicas=n_gpus,
       rank=rank,
       shuffle=True)
-  collate_fn = TextMelCollate(1)
+  collate_fn = TextMelSpeakerCollate(1)
   train_loader = DataLoader(train_dataset, num_workers=8, shuffle=False,
       batch_size=hps.train.batch_size, pin_memory=True,
       drop_last=True, collate_fn=collate_fn, sampler=train_sampler)
   if rank == 0:
-    val_dataset = TextMelLoader(hps.data.validation_files, hps.data)
+    val_dataset = TextMelSpeakerLoader(hps.data.validation_files, hps.data)
     val_loader = DataLoader(val_dataset, num_workers=8, shuffle=False,
         batch_size=hps.train.batch_size, pin_memory=True,
         drop_last=True, collate_fn=collate_fn)
@@ -87,7 +87,8 @@ def train_and_eval(rank, n_gpus, hps):
     if rank==0:
       train(rank, epoch, hps, generator, optimizer_g, train_loader, logger, writer)
       evaluate(rank, epoch, hps, generator, optimizer_g, val_loader, logger, writer_eval)
-      utils.save_checkpoint(generator, optimizer_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_{}.pth".format(epoch)))
+      if epoch % hps.save_epoch == 0:
+        utils.save_checkpoint(generator, optimizer_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_{}.pth".format(epoch)))
     else:
       train(rank, epoch, hps, generator, optimizer_g, train_loader, None, None)
 
@@ -97,14 +98,15 @@ def train(rank, epoch, hps, generator, optimizer_g, train_loader, logger, writer
   global global_step
 
   generator.train()
-  for batch_idx, (x, x_lengths, y, y_lengths) in enumerate(train_loader):
+  for batch_idx, (x, x_lengths, y, y_lengths, sid) in enumerate(train_loader):
     x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(rank, non_blocking=True)
     y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
+    sid = sid.cuda(rank, non_blocking=True)
 
     # Train Generator
     optimizer_g.zero_grad()
     
-    (z, z_m, z_logs, logdet, z_mask), (x_m, x_logs, x_mask), (attn, logw, logw_) = generator(x, x_lengths, y, y_lengths, gen=False)
+    (z, z_m, z_logs, logdet, z_mask), (x_m, x_logs, x_mask), (attn, logw, logw_) = generator(x, x_lengths, y, y_lengths, gen=False, g=sid)
     l_mle = commons.mle_loss(z, z_m, z_logs, logdet, z_mask)
     l_length = commons.duration_loss(logw, logw_, x_lengths)
 
@@ -122,7 +124,7 @@ def train(rank, epoch, hps, generator, optimizer_g, train_loader, logger, writer
     
     if rank==0:
       if batch_idx % hps.train.log_interval == 0:
-        (y_gen, *_), *_ = generator.module(x[:1], x_lengths[:1], gen=True)
+        (y_gen, *_), *_ = generator.module(x[:1], x_lengths[:1], gen=True, g=sid[:1])
         logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
           epoch, batch_idx * len(x), len(train_loader.dataset),
           100. * batch_idx / len(train_loader),
@@ -151,12 +153,13 @@ def evaluate(rank, epoch, hps, generator, optimizer_g, val_loader, logger, write
     generator.eval()
     losses_tot = []
     with torch.no_grad():
-      for batch_idx, (x, x_lengths, y, y_lengths) in enumerate(val_loader):
+      for batch_idx, (x, x_lengths, y, y_lengths, sid) in enumerate(val_loader):
         x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(rank, non_blocking=True)
         y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
+        sid = sid.cuda(rank, non_blocking=True)
 
         
-        (z, z_m, z_logs, logdet, z_mask), (x_m, x_logs, x_mask), (attn, logw, logw_) = generator(x, x_lengths, y, y_lengths, gen=False)
+        (z, z_m, z_logs, logdet, z_mask), (x_m, x_logs, x_mask), (attn, logw, logw_) = generator(x, x_lengths, y, y_lengths, gen=False, g=sid)
         l_mle = commons.mle_loss(z, z_m, z_logs, logdet, z_mask)
         l_length = commons.duration_loss(logw, logw_, x_lengths)
 
