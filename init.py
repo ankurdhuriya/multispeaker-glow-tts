@@ -11,7 +11,6 @@ from data_utils import TextMelSpeakerLoader, TextMelSpeakerCollate
 import models
 import commons
 import utils
-from text.symbols import symbols
                             
 
 class FlowGenerator_DDI(models.FlowGenerator):
@@ -38,19 +37,19 @@ def main():
       drop_last=True, collate_fn=collate_fn)
 
   generator = FlowGenerator_DDI(
-      len(symbols) + getattr(hps.data, "add_blank", False), 
+      len(hps.data.symbols) + getattr(hps.data, "add_blank", False), 
       out_channels=hps.data.n_mel_channels,
       **hps.model).cuda()
   optimizer_g = commons.Adam(generator.parameters(), scheduler=hps.train.scheduler, dim_model=hps.model.hidden_channels, warmup_steps=hps.train.warmup_steps, lr=hps.train.learning_rate, betas=hps.train.betas, eps=hps.train.eps)
    
   generator.train()
   for batch_idx, (x, x_lengths, y, y_lengths, sid) in enumerate(train_loader):
-    x, x_lengths = x.cuda(), x_lengths.cuda()
-    y, y_lengths = y.cuda(), y_lengths.cuda()
-    sid = sid.cuda
+      x, x_lengths = x.cuda(), x_lengths.cuda()
+      y, y_lengths = y.cuda(), y_lengths.cuda()
+      sid = sid.cuda()
 
-    _ = generator(x, x_lengths, y, y_lengths, gen=False, g=sid)
-    break
+      _ = generator(x, x_lengths, y, y_lengths, gen=False, g=sid)
+      break
 
   utils.save_checkpoint(generator, optimizer_g, hps.train.learning_rate, 0, os.path.join(hps.model_dir, "ddi_G.pth"))
 

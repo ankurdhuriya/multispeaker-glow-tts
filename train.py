@@ -16,7 +16,6 @@ from data_utils import TextMelSpeakerLoader, TextMelSpeakerCollate
 import models
 import commons
 import utils
-from text.symbols import symbols
                             
 
 global_step = 0
@@ -64,7 +63,7 @@ def train_and_eval(rank, n_gpus, hps):
         drop_last=True, collate_fn=collate_fn)
 
   generator = models.FlowGenerator(
-      n_vocab=len(symbols) + getattr(hps.data, "add_blank", False), 
+      n_vocab=len(hps.data.symbols) + getattr(hps.data, "add_blank", False), 
       out_channels=hps.data.n_mel_channels, 
       **hps.model).cuda(rank)
   optimizer_g = commons.Adam(generator.parameters(), scheduler=hps.train.scheduler, dim_model=hps.model.hidden_channels, warmup_steps=hps.train.warmup_steps, lr=hps.train.learning_rate, betas=hps.train.betas, eps=hps.train.eps)
