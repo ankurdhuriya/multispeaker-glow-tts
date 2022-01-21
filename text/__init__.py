@@ -1,12 +1,6 @@
 """ from https://github.com/keithito/tacotron """
 import re
 from text import cleaners
-from text.symbols import symbols
-
-
-# Mappings from symbol to numeric ID and vice versa:
-_symbol_to_id = {s: i for i, s in enumerate(symbols)}
-_id_to_symbol = {i: s for i, s in enumerate(symbols)}
 
 # Regular expression matching text enclosed in curly braces:
 _curly_re = re.compile(r'(.*?)\{(.+?)\}(.*)')
@@ -20,7 +14,7 @@ def get_arpabet(word, dictionary):
     return word
 
 
-def text_to_sequence(text, cleaner_names, dictionary=None):
+def text_to_sequence(text, symbols, cleaner_names, dictionary=None):
   '''Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
 
     The text can optionally have ARPAbet sequences enclosed in curly braces embedded
@@ -34,6 +28,11 @@ def text_to_sequence(text, cleaner_names, dictionary=None):
     Returns:
       List of integers corresponding to the symbols in the text
   '''
+  # Mappings from symbol to numeric ID and vice versa:
+  global _id_to_symbol, _symbol_to_id
+  _symbol_to_id = {s: i for i, s in enumerate(symbols)}
+  _id_to_symbol = {i: s for i, s in enumerate(symbols)}
+
   sequence = []
 
   space = _symbols_to_sequence(' ')
@@ -62,19 +61,6 @@ def text_to_sequence(text, cleaner_names, dictionary=None):
   if dictionary is not None:
     sequence = sequence[:-1] if sequence[-1] == space[0] else sequence
   return sequence
-
-
-def sequence_to_text(sequence):
-  '''Converts a sequence of IDs back to a string'''
-  result = ''
-  for symbol_id in sequence:
-    if symbol_id in _id_to_symbol:
-      s = _id_to_symbol[symbol_id]
-      # Enclose ARPAbet back in curly braces:
-      if len(s) > 1 and s[0] == '@':
-        s = '{%s}' % s[1:]
-      result += s
-  return result.replace('}{', ' ')
 
 
 def _clean_text(text, cleaner_names):
