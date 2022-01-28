@@ -6,15 +6,12 @@ Tensorflow Implementation of Glow-TTS, Jaehyeon Kim et al., in NeurIPS 2020.
 - Full code is based on original github repository [jaywalnut310/glow-tts](https://github.com/jaywalnut310/glow-tts)
 
 ## Structure
-<details>
-<summary></summary>
 
 ### Training
 <img src='./Figures/Training.svg' width=50% />
 
 ### Inference
 <img src='./Figures/Inference.svg' width=41.5% />
-</details>
 
 
 
