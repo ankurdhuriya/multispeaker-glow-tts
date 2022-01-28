@@ -11,4 +11,4 @@ Tested in python 3.7.11 conda environment, [requirements.txt](./requirements.txt
 
 ## Usage
 
-Put dataset specific symbols list in config file
+Put dataset specific symbols list in config file [base_blank.json](./configs/base_blank.json)
