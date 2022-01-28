@@ -12,3 +12,15 @@ Tested in python 3.7.11 conda environment, [requirements.txt](./requirements.txt
 ## Usage
 
 Put dataset specific symbols list in config file [base_blank.json](./configs/base_blank.json)
+
+train, valid filelists format
+
+> absolute_filepath|numerical_speaker_id|transcript
+
+To start training, from scratch run
+
+```bash
+python [init.py](./init.py) -c $config -m $modeldir
+python [train.py](./train.py) -c $config -m $modeldir
+```
+
