@@ -19,8 +19,7 @@ train, valid filelists format
 
 To start training, from scratch run
 
-```bash
+
 python [init.py](./init.py) -c $config -m $modeldir
 python [train.py](./train.py) -c $config -m $modeldir
-```
 
