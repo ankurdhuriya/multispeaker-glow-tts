@@ -17,9 +17,4 @@ train, valid filelists format
 
 > absolute_filepath|numerical_speaker_id|transcript
 
-To start training, from scratch run
-
-
-python [init.py](./init.py) -c $config -m $modeldir
-python [train.py](./train.py) -c $config -m $modeldir
-
+To start training, run [train_ddi.sh](./train_ddi.sh)
