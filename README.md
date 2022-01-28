@@ -8,10 +8,10 @@ Tensorflow Implementation of Glow-TTS, Jaehyeon Kim et al., in NeurIPS 2020.
 ## Structure
 
 ### Training
-<img src='./Figures/Training.svg' width=50% />
+<img src='./Figures/Training.svg' width=75% />
 
 ### Inference
-<img src='./Figures/Inference.svg' width=41.5% />
+<img src='./Figures/Inference.svg' width=75% />
 
 
 
