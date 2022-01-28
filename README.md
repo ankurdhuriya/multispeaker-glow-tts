@@ -18,3 +18,5 @@ train, valid filelists format
 > absolute_filepath|numerical_speaker_id|transcript
 
 To start training, run [train_ddi.sh](./train_ddi.sh)
+
+To inference the audio, run [inference.py](./inference.py)
